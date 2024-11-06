@@ -20,7 +20,7 @@ def add(x, y):
         Sum of x + y
     """
     ### BEGIN YOUR CODE
-    pass
+    return x + y
     ### END YOUR CODE
 
 
@@ -48,7 +48,20 @@ def parse_mnist(image_filename, label_filename):
                 for MNIST will contain the values 0-9.
     """
     ### BEGIN YOUR CODE
-    pass
+    with gzip.open(image_filename, "rb") as image_file:
+        magic, n, row, col = struct.unpack(">4i", image_file.read(16))
+        assert(magic == 2051)
+        size = row * col
+        X = np.vstack([np.array(struct.unpack(f"{size}B", image_file.read(size)), dtype=np.float32) for _ in range(n)])
+        X -= np.min(X)
+        X /= np.max(X)
+
+    with gzip.open(label_filename, "rb") as label_file:
+        magic, n = struct.unpack(">2i", label_file.read(8))
+        assert(magic == 2049)
+        Y = np.array(struct.unpack(f"{n}B", label_file.read(n)), dtype=np.uint8)
+    
+    return (X, Y)
     ### END YOUR CODE
 
 
@@ -68,7 +81,7 @@ def softmax_loss(Z, y):
         Average softmax loss over the sample.
     """
     ### BEGIN YOUR CODE
-    pass
+    return np.sum(np.log(np.sum(np.exp(Z), axis=1)) - Z[np.arange(y.size), y]) / y.size
     ### END YOUR CODE
 
 
@@ -91,7 +104,19 @@ def softmax_regression_epoch(X, y, theta, lr = 0.1, batch=100):
         None
     """
     ### BEGIN YOUR CODE
-    pass
+    iterations = (y.size + batch - 1) // batch
+    for i in range(iterations):
+        x = X[i * batch : (i + 1) * batch, :]
+        yy = y[i * batch : (i + 1) * batch]
+        dim0 = x.shape[0]
+        z = np.exp(np.matmul(x, theta))
+        z = z / np.sum(z, axis=1, keepdims=True)
+        ey = np.zeros(shape=(dim0, theta.shape[1]))
+        ey[np.arange(dim0), yy] = 1
+        grad = np.matmul(x.T, z - ey) / dim0
+        assert(theta.shape == grad.shape)
+        theta -= lr * grad
+
     ### END YOUR CODE
 
 
@@ -118,7 +143,28 @@ def nn_epoch(X, y, W1, W2, lr = 0.1, batch=100):
         None
     """
     ### BEGIN YOUR CODE
-    pass
+    iterations = (y.shape[0] + batch - 1) // batch
+    for i in range(iterations):
+        xx = X[i * batch : (i + 1) * batch, :]
+        yy = y[i * batch : (i + 1) * batch]
+        dim = xx.shape[0]
+        Iy = np.zeros(shape=(dim, W2.shape[1]))
+        Iy[np.arange(dim), yy] = 1
+        Z1 = np.maximum(0, np.matmul(xx, W1))
+        G2 = np.exp(np.matmul(Z1, W2))
+        G2 = G2 / np.sum(G2, axis=1, keepdims=True)
+        G2 = G2 - Iy
+        G1 = np.zeros(Z1.shape)
+        G1[Z1 > 0] = 1
+        G1 = G1 * np.matmul(G2, W2.T)
+
+        grad1 = np.matmul(xx.T, G1) / dim
+        grad2 = np.matmul(Z1.T, G2) / dim
+        assert(grad1.shape == W1.shape)
+        assert(grad2.shape == W2.shape)
+
+        W1 -= lr * grad1
+        W2 -= lr * grad2
     ### END YOUR CODE
 
 
