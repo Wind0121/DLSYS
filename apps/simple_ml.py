@@ -10,8 +10,8 @@ sys.path.append("python/")
 import needle as ndl
 
 
-def parse_mnist(image_filesname, label_filename):
-    """Read an images and labels file in MNIST format.  See this page:
+def parse_mnist(image_filename, label_filename):
+    """ Read an images and labels file in MNIST format.  See this page:
     http://yann.lecun.com/exdb/mnist/ for a description of the file format.
 
     Args:
@@ -33,12 +33,25 @@ def parse_mnist(image_filesname, label_filename):
                 for MNIST will contain the values 0-9.
     """
     ### BEGIN YOUR SOLUTION
-    raise NotImplementedError()
+    with gzip.open(image_filename, "rb") as image_file:
+        magic, n, row, col = struct.unpack(">4i", image_file.read(16))
+        assert(magic == 2051)
+        size = row * col
+        X = np.vstack([np.array(struct.unpack(f"{size}B", image_file.read(size)), dtype=np.float32) for _ in range(n)])
+        X -= np.min(X)
+        X /= np.max(X)
+
+    with gzip.open(label_filename, "rb") as label_file:
+        magic, n = struct.unpack(">2i", label_file.read(8))
+        assert(magic == 2049)
+        Y = np.array(struct.unpack(f"{n}B", label_file.read(n)), dtype=np.uint8)
+    
+    return (X, Y)
     ### END YOUR SOLUTION
 
 
 def softmax_loss(Z, y_one_hot):
-    """Return softmax loss.  Note that for the purposes of this assignment,
+    """ Return softmax loss.  Note that for the purposes of this assignment,
     you don't need to worry about "nicely" scaling the numerical properties
     of the log-sum-exp computation, but can just compute this directly.
 
@@ -54,12 +67,12 @@ def softmax_loss(Z, y_one_hot):
         Average softmax loss over the sample. (ndl.Tensor[np.float32])
     """
     ### BEGIN YOUR SOLUTION
-    raise NotImplementedError()
+    return (ndl.log(ndl.exp(Z).sum((1,))).sum() - (Z * y_one_hot).sum()) / Z.shape[0]
     ### END YOUR SOLUTION
 
 
-def nn_epoch(X, y, W1, W2, lr=0.1, batch=100):
-    """Run a single epoch of SGD for a two-layer neural network defined by the
+def nn_epoch(X, y, W1, W2, lr = 0.1, batch=100):
+    """ Run a single epoch of SGD for a two-layer neural network defined by the
     weights W1 and W2 (with no bias terms):
         logits = ReLU(X * W1) * W1
     The function should use the step size lr, and the specified batch size (and
@@ -83,7 +96,29 @@ def nn_epoch(X, y, W1, W2, lr=0.1, batch=100):
     """
 
     ### BEGIN YOUR SOLUTION
-    raise NotImplementedError()
+    iterations = (X.shape[0] + batch - 1) // batch
+    for i in range(iterations):
+        # 构造一个批次的X tensor和标签onehot tensor
+        xx = X[i * batch : (i + 1) * batch, :]
+        yy = y[i * batch : (i + 1) * batch]
+        dim0 = xx.shape[0]
+        y_onehot = np.zeros((dim0, W2.shape[1]))
+        y_onehot[np.arange(dim0), yy] = 1
+        x_tensor = ndl.Tensor(xx)
+        y_tensor = ndl.Tensor(y_onehot)
+
+        # 前向传播
+        z_tensor = ndl.relu(x_tensor @ W1) @ W2
+
+        # 反向传播
+        loss = softmax_loss(z_tensor, y_tensor)
+        loss.backward()
+
+        # SGD
+        W1 = ndl.Tensor(W1.realize_cached_data() - lr * W1.grad.realize_cached_data())
+        W2 = ndl.Tensor(W2.realize_cached_data() - lr * W2.grad.realize_cached_data())
+    
+    return (W1, W2)
     ### END YOUR SOLUTION
 
 
