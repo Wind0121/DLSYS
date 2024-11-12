@@ -338,12 +338,12 @@ def relu(a):
 class Tanh(TensorOp):
     def compute(self, a):
         ### BEGIN YOUR SOLUTION
-        raise NotImplementedError()
+        return array_api.tanh(a)
         ### END YOUR SOLUTION
 
     def gradient(self, out_grad, node):
         ### BEGIN YOUR SOLUTION
-        raise NotImplementedError()
+        return out_grad * (-(tanh(node.inputs[0]) ** 2) + 1)
         ### END YOUR SOLUTION
 
 
@@ -361,14 +361,26 @@ class Stack(TensorOp):
         """
         self.axis = axis
 
-    def compute(self, args: TensorTuple) -> Tensor:
+    def compute(self, args):
         ### BEGIN YOUR SOLUTION
-        raise NotImplementedError()
+        shape = args[0].shape
+        for array in args:
+            assert shape == array.shape
+        new_shape = list(shape)
+        n = len(args)
+        new_shape.insert(self.axis, n)
+        new_array = array_api.empty(tuple(new_shape), device=args[0].device)
+
+        slices = [slice(0, s) for s in new_shape]
+        for i, array in enumerate(args):
+            slices[self.axis] = slice(i, i + 1)
+            new_array[tuple(slices)] = args[i]
+        return new_array
         ### END YOUR SOLUTION
 
     def gradient(self, out_grad, node):
         ### BEGIN YOUR SOLUTION
-        raise NotImplementedError()
+        return split(out_grad, self.axis)
         ### END YOUR SOLUTION
 
 
@@ -388,12 +400,23 @@ class Split(TensorTupleOp):
 
     def compute(self, A):
         ### BEGIN YOUR SOLUTION
-        raise NotImplementedError()
+        n = A.shape[self.axis]
+        new_shape = list(A.shape)
+        new_shape.pop(self.axis)
+        new_array_list = []
+        new_slice = [slice(0, s) for s in new_shape]
+        old_slice = [slice(0, s) for s in A.shape]
+        for i in range(n):
+            new_array = array_api.empty(tuple(new_shape), device=A.device)
+            old_slice[self.axis] = slice(i, i + 1)
+            new_array[tuple(new_slice)] = A[tuple(old_slice)]
+            new_array_list.append(new_array)
+        return tuple(new_array_list)
         ### END YOUR SOLUTION
 
     def gradient(self, out_grad, node):
         ### BEGIN YOUR SOLUTION
-        raise NotImplementedError()
+        return stack(out_grad, self.axis)
         ### END YOUR SOLUTION
 
 
