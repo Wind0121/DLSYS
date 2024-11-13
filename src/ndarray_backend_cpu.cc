@@ -47,12 +47,12 @@ enum strided_index_mode {INDEX_OUT, INDEX_IN, SET_VAL};
 
 void _strided_index_setter(const AlignedArray* a, AlignedArray* out, std::vector<int32_t> shape,
                     std::vector<int32_t> strides, size_t offset, strided_index_mode mode, int val=-1) {
-  size_t cnt = 0;
-  size_t depth = shape.size();
-  std::vector<uint32_t> loop(depth, 0);
+  int32_t cnt = 0;
+  int32_t depth = shape.size();
+  std::vector<int32_t> loop(depth, 0);
   while(true) {
-    size_t index = offset;
-    for (int i = 0; i < depth; i++) {
+    int32_t index = offset;
+    for (int32_t i = 0; i < depth; i++) {
       index += loop[i] * strides[i];
     }
     switch (mode) {
@@ -61,7 +61,7 @@ void _strided_index_setter(const AlignedArray* a, AlignedArray* out, std::vector
       case SET_VAL: out->ptr[index] = val; break;
     }
     loop[depth - 1]++;
-    for (int i = depth - 1; i >= 0; i--) {
+    for (int32_t i = depth - 1; i >= 0; i--) {
       if (loop[i] == shape[i]) {
         if (i == 0) {
           return;
