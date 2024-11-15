@@ -132,7 +132,7 @@ class Sequential(Module):
 class SoftmaxLoss(Module):
     def forward(self, logits: Tensor, y: Tensor):
         ### BEGIN YOUR SOLUTION
-        return (ops.summation(ops.logsumexp(logits, (1,))) - ops.summation(logits * init.one_hot(logits.shape[1], y))) / logits.shape[0]
+        return (ops.summation(ops.logsumexp(logits, (1,))) - ops.summation(logits * init.one_hot(logits.shape[1], y, device=logits.device, requires_grad=True))) / logits.shape[0]
         ### END YOUR SOLUTION
 
 
@@ -210,7 +210,7 @@ class Dropout(Module):
     def forward(self, x: Tensor) -> Tensor:
         ### BEGIN YOUR SOLUTION
         if self.training:
-            mask = init.randb(*x.shape, p=1 - self.p)
+            mask = init.randb(*x.shape, p=1 - self.p, device=x.device, requires_grad=True)
             return x * mask / (1 - self.p)
         else:
             return x

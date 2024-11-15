@@ -25,7 +25,15 @@ class SGD(Optimizer):
 
     def step(self):
         ### BEGIN YOUR SOLUTION
-        raise NotImplementedError()
+        for param in self.params:
+            if param not in self.u:
+                self.u[param] = ndl.init.zeros(*param.shape, device=param.device, requires_grad=True)
+            if self.weight_decay > 0:
+                grad = param.grad.data + self.weight_decay * param.data
+            else:
+                grad = param.grad.data
+            self.u[param].data = self.momentum * self.u[param].data + (1 - self.momentum) * grad.data
+            param.data = param.data - self.lr * self.u[param].data
         ### END YOUR SOLUTION
 
     def clip_grad_norm(self, max_norm=0.25):
@@ -60,5 +68,19 @@ class Adam(Optimizer):
 
     def step(self):
         ### BEGIN YOUR SOLUTION
-        raise NotImplementedError()
+        self.t += 1
+        for param in self.params:
+            if param not in self.m:
+                self.m[param] = ndl.init.zeros(*param.shape, device=param.device, requires_grad=True)
+            if param not in self.v:
+                self.v[param] = ndl.init.zeros(*param.shape, device=param.device, requires_grad=True)
+            if self.weight_decay > 0:
+                grad = param.grad.data + self.weight_decay * param.data
+            else:
+                grad = param.grad.data
+            self.m[param].data = self.beta1 * self.m[param].data + (1 - self.beta1) * grad.data
+            self.v[param].data = self.beta2 * self.v[param].data + (1 - self.beta2) * (grad.data ** 2)
+            unbiased_m = self.m[param].data / (1 - self.beta1 ** self.t)
+            unbiased_v = self.v[param].data / (1 - self.beta2 ** self.t)
+            param.data = param.data - self.lr * unbiased_m / (unbiased_v ** 0.5 + self.eps)
         ### END YOUR SOLUTION

@@ -33,7 +33,7 @@ class TupleGetItem(TensorOp):
         in_grad = []
         for i, value in enumerate(node.inputs[0]):
             if i != index:
-                in_grad.append(init.zeros_like(value))
+                in_grad.append(init.zeros_like(value, device=value.device))
             else:
                 in_grad.append(out_grad)
         return MakeTensorTuple()(*in_grad)
