@@ -19,7 +19,7 @@ test_dataloader = ndl.data.DataLoader(dataset=test_dataset,
 
 model = ResNet9(device=device, dtype="float32")
 
-train_cifar10(model, train_dataloader, n_epochs=1, optimizer=ndl.optim.Adam,
+train_cifar10(model, train_dataloader, n_epochs=20, optimizer=ndl.optim.Adam,
       lr=0.001, weight_decay=0.001)
 
 evaluate_cifar10(model, test_dataloader)
