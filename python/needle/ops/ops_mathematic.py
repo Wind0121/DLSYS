@@ -201,7 +201,7 @@ class BroadcastTo(TensorOp):
 
     def compute(self, a):
         ### BEGIN YOUR SOLUTION
-        return array_api.broadcast_to(a, self.shape)
+        return array_api.broadcast_to(a, self.shape).compact()
         ### END YOUR SOLUTION
 
     def gradient(self, out_grad, node):

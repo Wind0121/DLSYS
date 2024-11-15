@@ -143,24 +143,30 @@ class BatchNorm1d(Module):
         self.eps = eps
         self.momentum = momentum
         ### BEGIN YOUR SOLUTION
-        self.weight = Parameter(init.ones(dim, requires_grad=True))
-        self.bias = Parameter(init.zeros(dim, requires_grad=True))
-        self.running_mean = init.zeros(dim)
-        self.running_var = init.ones(dim)
+        self.weight = Parameter(init.ones(dim, requires_grad=True, device=device))
+        self.bias = Parameter(init.zeros(dim, requires_grad=True, device=device))
+        self.running_mean = init.zeros(dim, device=device)
+        self.running_var = init.ones(dim, device=device)
         ### END YOUR SOLUTION
 
     def forward(self, x: Tensor) -> Tensor:
         ### BEGIN YOUR SOLUTION
         if self.training:
-            mean = (x.sum((0,)) / x.shape[0])
-            var = (((x - mean.broadcast_to(x.shape)) ** 2).sum((0,)) / x.shape[0])
-            self.running_mean = (1 - self.momentum) * self.running_mean + self.momentum * mean.data
-            self.running_var = (1 - self.momentum) * self.running_var + self.momentum * var.data
-            norm = (x - mean.broadcast_to(x.shape)) / ((var.broadcast_to(x.shape) + self.eps) ** 0.5)
-            return self.weight.broadcast_to(x.shape) * norm + self.bias.broadcast_to(x.shape)
+            batch_mean = (x.sum((0,)) / x.shape[0])
+            batch_mean_vec = batch_mean.reshape((1, x.shape[1]))
+
+            batch_var = (((x - batch_mean_vec.broadcast_to(x.shape)) ** 2).sum((0,)) / x.shape[0])
+            batch_var_vec = batch_var.reshape((1, x.shape[1]))
+
+            self.running_mean = (1 - self.momentum) * self.running_mean + self.momentum * batch_mean.data
+            self.running_var = (1 - self.momentum) * self.running_var + self.momentum * batch_var.data
+
+            norm = (x - batch_mean_vec.broadcast_to(x.shape)) / ((batch_var_vec.broadcast_to(x.shape) + self.eps) ** 0.5)
+
+            return self.weight.reshape((1, x.shape[1])).broadcast_to(x.shape) * norm + self.bias.reshape((1, x.shape[1])).broadcast_to(x.shape)
         else:
-            norm = (x - self.running_mean.broadcast_to(x.shape)) / (self.running_var.broadcast_to(x.shape) + self.eps)**0.5
-            return self.weight.broadcast_to(x.shape) * norm + self.bias.broadcast_to(x.shape)
+            norm = (x - self.running_mean.reshape((1, x.shape[1])).broadcast_to(x.shape)) / (self.running_var.reshape((1, x.shape[1])).broadcast_to(x.shape) + self.eps)**0.5
+            return self.weight.reshape((1, x.shape[1])).broadcast_to(x.shape) * norm + self.bias.reshape((1, x.shape[1])).broadcast_to(x.shape)
         ### END YOUR SOLUTION
 
 class BatchNorm2d(BatchNorm1d):
@@ -181,8 +187,8 @@ class LayerNorm1d(Module):
         self.dim = dim
         self.eps = eps
         ### BEGIN YOUR SOLUTION
-        self.weight = Parameter(init.ones(dim, requires_grad=True))
-        self.bias = Parameter(init.zeros(dim, requires_grad=True))
+        self.weight = Parameter(init.ones(dim, requires_grad=True, device=device))
+        self.bias = Parameter(init.zeros(dim, requires_grad=True, device=device))
         ### END YOUR SOLUTION
 
     def forward(self, x: Tensor) -> Tensor:

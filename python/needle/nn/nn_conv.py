@@ -6,7 +6,7 @@ from needle import ops
 import needle.init as init
 import numpy as np
 import math
-from .nn_basic import Parameter, Module
+from .nn_basic import Parameter, Module, Sequential, BatchNorm2d, ReLU
 
 
 class Conv(Module):
@@ -50,3 +50,15 @@ class Conv(Module):
 
         return x.transpose((2, 3)).transpose((1, 2))
         ### END YOUR SOLUTION
+
+class ConvBN(Module):
+    def __init__(self, in_channels, out_channels, kernel_size, stride=1, bias=True, device=None, dtype="float32"):
+        super().__init__()
+        self.module = Sequential(
+            Conv(in_channels, out_channels, kernel_size, stride=stride, device=device),
+            BatchNorm2d(out_channels, device=device),
+            ReLU()
+        )
+    
+    def forward(self, x: Tensor) -> Tensor:
+        return self.module(x)
