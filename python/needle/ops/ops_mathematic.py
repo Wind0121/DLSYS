@@ -225,6 +225,11 @@ class Summation(TensorOp):
 
     def compute(self, a):
         ### BEGIN YOUR SOLUTION
+        if isinstance(self.axes, (list, tuple)) and len(self.axes) > 1:
+            # multiple axes case
+            for axis in reversed(sorted(self.axes)):
+                a = array_api.sum(a, axis = axis)
+            return a
         return array_api.sum(a, axis=self.axes)
         ### END YOUR SOLUTION
 
