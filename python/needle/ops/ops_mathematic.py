@@ -211,7 +211,10 @@ class BroadcastTo(TensorOp):
             if ori == cur:
                 shrink_dims[len(self.shape) - i - 1] = -1
         shrink_dims = tuple(filter(lambda x: x >= 0, shrink_dims))
-        return summation(out_grad, shrink_dims).reshape(node.inputs[0].shape)
+        if not shrink_dims:
+            return out_grad
+        else:
+            return summation(out_grad, shrink_dims).reshape(node.inputs[0].shape)
         ### END YOUR SOLUTION
 
 
