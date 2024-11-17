@@ -25,7 +25,10 @@ class Dictionary(object):
         Returns the word's unique ID.
         """
         ### BEGIN YOUR SOLUTION
-        raise NotImplementedError()
+        if word not in self.word2idx:
+            self.word2idx[word] = len(self.idx2word)
+            self.idx2word.append(word)
+        return self.word2idx[word]
         ### END YOUR SOLUTION
 
     def __len__(self):
@@ -33,7 +36,7 @@ class Dictionary(object):
         Returns the number of unique words in the dictionary.
         """
         ### BEGIN YOUR SOLUTION
-        raise NotImplementedError()
+        return len(self.idx2word)
         ### END YOUR SOLUTION
 
 
@@ -60,7 +63,18 @@ class Corpus(object):
         ids: List of ids
         """
         ### BEGIN YOUR SOLUTION
-        raise NotImplementedError()
+        out = []
+
+        with open(path, "r") as file:
+            for i, line in enumerate(file):
+                if max_lines and i >= max_lines:
+                    break
+                words = line.strip().split()
+                for word in words:
+                    out.append(self.dictionary.add_word(word))
+                out.append(self.dictionary.add_word('<eos>'))
+
+        return out
         ### END YOUR SOLUTION
 
 
@@ -81,7 +95,10 @@ def batchify(data, batch_size, device, dtype):
     Returns the data as a numpy array of shape (nbatch, batch_size).
     """
     ### BEGIN YOUR SOLUTION
-    raise NotImplementedError()
+    nbatch = len(data) // batch_size
+    out = np.array(data[0 : nbatch * batch_size], dtype=dtype).reshape((batch_size, nbatch))
+    out = out.transpose((1, 0))
+    return out
     ### END YOUR SOLUTION
 
 
@@ -105,5 +122,11 @@ def get_batch(batches, i, bptt, device=None, dtype=None):
     target - Tensor of shape (bptt*bs,) with cached data as NDArray
     """
     ### BEGIN YOUR SOLUTION
-    raise NotImplementedError()
+    assert i + 1 + bptt <= batches.shape[0]
+
+    data = Tensor(batches[i : i + bptt, :], device=device, dtype=dtype)
+    target = Tensor(batches[i + 1 : i + 1 + bptt, :], device=device, dtype=dtype)
+    target = target.reshape((target.shape[0] * target.shape[1], ))
+
+    return data, target
     ### END YOUR SOLUTION
