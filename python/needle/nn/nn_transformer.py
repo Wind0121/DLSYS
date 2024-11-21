@@ -4,6 +4,7 @@ import needle.backend_ndarray.ndarray as ndarray
 from needle import ops
 import needle.init as init
 import numpy as np
+import math
 from .nn_sequence import Embedding
 from .nn_basic import (
     Parameter, 
@@ -108,7 +109,17 @@ class MultiHeadAttention(Module):
         probs = None
 
         ### BEGIN YOUR SOLUTION
-        raise NotImplementedError()
+        activation = self.matmul(q, k) / math.sqrt(q_dim)
+        
+        if self.causal:
+          mask = self.create_causal_mask(queries_len, keys_values_len, device=self.device).broadcast_to(activation.shape)
+          activation = activation + mask
+
+        activation = self.softmax(activation)
+
+        probs = self.dropout(activation)
+
+        result = self.matmul(probs, v.transpose((3, 2)))
         ### END YOUR SOLUTION
 
         return result, probs
