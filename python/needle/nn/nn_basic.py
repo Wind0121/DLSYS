@@ -198,11 +198,19 @@ class LayerNorm1d(Module):
 
     def forward(self, x: Tensor) -> Tensor:
         ### BEGIN YOUR SOLUTION
-        mean = (x.sum((1,)) / x.shape[1]).reshape((x.shape[0], 1)).broadcast_to(x.shape)
-        var = (((x - mean) ** 2).sum((1,)) / x.shape[1]).reshape((x.shape[0], 1)).broadcast_to(x.shape)
+        # mean = (x.sum((1,)) / x.shape[1]).reshape((x.shape[0], 1)).broadcast_to(x.shape)
+        # var = (((x - mean) ** 2).sum((1,)) / x.shape[1]).reshape((x.shape[0], 1)).broadcast_to(x.shape)
+        # y = (x - mean) / ((var + self.eps) ** 0.5)
+        # y = y * self.weight.broadcast_to(y.shape)
+        # y = y + self.bias.broadcast_to(y.shape)
+        # return y
+        axis = len(x.shape) - 1
+        mean = ((x.sum((axis,)) / x.shape[axis]).reshape((*x.shape[:-1], 1)).broadcast_to(x.shape))
+        var = (((x - mean) ** 2).sum((axis,)) / x.shape[axis]).reshape((*x.shape[:-1], 1)).broadcast_to(x.shape)
         y = (x - mean) / ((var + self.eps) ** 0.5)
-        y = y * self.weight.broadcast_to(y.shape)
-        y = y + self.bias.broadcast_to(y.shape)
+        new_shape = (1,) * (len(x.shape) - 1) + (self.dim,)
+        y = y * self.weight.reshape(new_shape).broadcast_to(y.shape)
+        y = y + self.bias.reshape(new_shape).broadcast_to(y.shape)
         return y
         ### END YOUR SOLUTION
 
