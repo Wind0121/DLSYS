@@ -306,6 +306,7 @@ class Transformer(Module):
         self.device = device
         self.dtype = dtype
         self.batch_first = batch_first
+        self.sequence_len = sequence_len
 
         ### BEGIN YOUR SOLUTION
         self.pos_embed = Embedding(sequence_len, embedding_size, device=device)

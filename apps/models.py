@@ -41,14 +41,14 @@ class LanguageModel(nn.Module):
     def __init__(self, embedding_size, output_size, hidden_size, num_layers=1,
                  seq_model='rnn', seq_len=40, device=None, dtype="float32"):
         """
-        Consists of an embedding layer, a sequence model (either RNN or LSTM), and a
+        Consists of an embedding layer, a sequence model (RNN, LSTM, or Transformer), and a
         linear layer.
         Parameters:
         output_size: Size of dictionary
         embedding_size: Size of embeddings
-        hidden_size: The number of features in the hidden state of LSTM or RNN
-        seq_model: 'rnn' or 'lstm', whether to use RNN or LSTM
-        num_layers: Number of layers in RNN or LSTM
+        hidden_size: The number of features in the hidden state of RNN, LSTM, or Transformer
+        seq_model: 'rnn', 'lstm', or 'transformer', whether to use RNN, LSTM, or Transformer
+        num_layers: Number of layers in RNN, LSTM, or Transformer
         """
         super(LanguageModel, self).__init__()
         ### BEGIN YOUR SOLUTION
@@ -57,14 +57,21 @@ class LanguageModel(nn.Module):
         self.hidden_size = hidden_size
         self.device = device
         self.seq_len = seq_len
-        
-        self.embedding = nn.Embedding(output_size, embedding_size, device=device)
-        self.linear = nn.Linear(hidden_size, output_size, device=device)
 
-        if seq_model == 'rnn':
-            self.seq = nn.RNN(embedding_size, hidden_size, num_layers, device=device)
-        else:
-            self.seq = nn.LSTM(embedding_size, hidden_size, num_layers, device=device)
+        if seq_model == 'transformer':
+          self.embedding = nn.Embedding(output_size, embedding_size, device=device)
+          self.linear = nn.Linear(embedding_size, output_size, device=device)
+          self.seq = nn.Transformer(embedding_size, hidden_size, num_layers, 
+                                    num_head=8, dim_head=embedding_size // 8, dropout=0.1, causal=True, device=device, 
+                                    dtype=dtype, batch_first=False, sequence_len=seq_len)
+        else:        
+          self.embedding = nn.Embedding(output_size, embedding_size, device=device)
+          self.linear = nn.Linear(hidden_size, output_size, device=device)
+
+          if seq_model == 'rnn':
+              self.seq = nn.RNN(embedding_size, hidden_size, num_layers, device=device)
+          else:
+              self.seq = nn.LSTM(embedding_size, hidden_size, num_layers, device=device)
         ### END YOUR SOLUTION
 
     def forward(self, x, h=None):
@@ -81,11 +88,17 @@ class LanguageModel(nn.Module):
             else h is tuple of (h0, c0), each of shape (num_layers, bs, hidden_size)
         """
         ### BEGIN YOUR SOLUTION
-        seq_len, bs = x.shape
-        x = self.embedding(x) # x: (seq_len, bs, embedding_size)
-        out, h = self.seq(x, h) # out: (seq_len, bs, hidden_size)
-        out = self.linear(out.reshape((out.shape[0] * out.shape[1], out.shape[2])))
-        return out, h
+        seq_len, batch_size = x.shape
+        x = self.embedding(x)  # Shape: (seq_len, bs, embedding_size)
+
+        if isinstance(self.seq, nn.Transformer):
+            x, _ = self.seq(x)  # Shape: (seq_len, bs, embedding_size)
+            x = self.linear(x.reshape((seq_len * batch_size, x.shape[-1])))  
+            h = ndl.init.zeros_like(x)
+        else:
+            x, h = self.seq(x, h)  # Shape: (seq_len, bs, hidden_size)
+            x = self.linear(x.reshape((seq_len * batch_size, self.hidden_size))) 
+        return x, h
         ### END YOUR SOLUTION
 
 
