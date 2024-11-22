@@ -213,9 +213,9 @@ class AttentionLayer(Module):
         result = None
 
         ### BEGIN YOUR SOLUTION
-        q = self.q_projection(self.prenorm_q(q).reshape((batch_size * queries_len, q_dim))).reshape((batch_size, queries_len, self.num_head * self.dim_head))
-        k = self.k_projection(self.prenorm_k(k).reshape((batch_size * keys_values_len, k_dim))).reshape((batch_size, keys_values_len, self.num_head * self.dim_head))
-        v = self.v_projection(self.prenorm_v(v).reshape((batch_size * keys_values_len, v_dim))).reshape((batch_size, keys_values_len, self.num_head * self.dim_head))
+        q = self.q_projection(self.prenorm_q(q))
+        k = self.k_projection(self.prenorm_k(k))
+        v = self.v_projection(self.prenorm_v(v))
 
         q = q.reshape((*q.shape[:-1], self.num_head, self.dim_head)).transpose((2, 1))
         k = k.reshape((*k.shape[:-1], self.num_head, self.dim_head)).transpose((2, 1))
@@ -225,9 +225,7 @@ class AttentionLayer(Module):
 
         result = result.transpose((2, 1)).reshape((batch_size, queries_len, self.num_head * self.dim_head))
 
-        result = self.out_projection(result.reshape((batch_size * queries_len, self.num_head * self.dim_head))).reshape((batch_size, queries_len, self.out_features))
-
-        return result
+        result = self.out_projection(result)
         ### END YOUR SOLUTION
 
         return result
@@ -254,7 +252,15 @@ class TransformerLayer(Module):
         self.dtype = dtype
 
         ### BEGIN YOUR SOLUTION
-        raise NotImplementedError()
+        self.attn = AttentionLayer(q_features, num_head, dim_head, dropout=dropout, causal=causal, device=device, dtype=dtype)
+        self.ffn = Sequential(
+            LayerNorm1d(q_features, device=device),
+            Linear(q_features, hidden_size, device=device),
+            ReLU(),
+            Dropout(dropout),
+            Linear(hidden_size, q_features, device=device)
+        )
+        self.dropout = Dropout(dropout)
         ### END YOUR SOLUTION
 
     def forward(
@@ -270,7 +276,8 @@ class TransformerLayer(Module):
         batch_size, seq_len, x_dim = x.shape
 
         ### BEGIN YOUR SOLUTION
-        raise NotImplementedError()
+        x = x + self.dropout(self.attn(x))
+        x = x + self.dropout(self.ffn(x))
         ### END YOUR SOLUTION
 
         return x

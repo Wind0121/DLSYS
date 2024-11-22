@@ -3,6 +3,7 @@
 from typing import List, Callable, Any
 from needle.autograd import Tensor
 from needle import ops
+import operator
 from functools import reduce
 import needle.init as init
 import numpy as np
@@ -95,9 +96,17 @@ class Linear(Module):
 
     def forward(self, X: Tensor) -> Tensor:
         ### BEGIN YOUR SOLUTION
+        shape = tuple(X.shape)
+        if len(shape) > 2:
+            X = X.reshape((reduce(lambda x, y: x * y, shape[:-1]), shape[-1]))
+
         y = X.matmul(self.weight)
         if self.bias:
             y = y + self.bias.broadcast_to(y.shape)
+
+        if len(shape) > 2:
+            y = y.reshape((*shape[:-1], y.shape[-1]))
+
         return y
         ### END YOUR SOLUTION
 
