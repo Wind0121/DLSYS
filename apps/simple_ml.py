@@ -12,6 +12,7 @@ import needle as ndl
 import needle.nn as nn
 from apps.models import *
 import time
+from tqdm import tqdm
 device = ndl.cuda()
 
 def parse_mnist(image_filesname, label_filename):
@@ -222,7 +223,7 @@ def epoch_general_ptb(data, model, seq_len=40, loss_fn=nn.SoftmaxLoss(), opt=Non
 
     nbatch, batch_size = data.shape
     hidden = None
-    for i in range(0, nbatch - 1, seq_len):
+    for i in tqdm(range(0, nbatch - 1, seq_len), desc="epoching"):
         X, y = ndl.data.get_batch(data, i, seq_len, device=device, dtype=dtype)
         
         batch_size = y.shape[0]
@@ -278,8 +279,9 @@ def train_ptb(model, data, seq_len=40, n_epochs=1, optimizer=ndl.optim.SGD,
     ### BEGIN YOUR SOLUTION
     opt = optimizer(model.parameters(), lr=lr, weight_decay=weight_decay)
 
-    for _ in range(n_epochs):
+    for i in range(n_epochs):
         avg_acc, avg_loss = epoch_general_ptb(data, model, seq_len=seq_len, loss_fn=loss_fn, opt=opt, device=device, dtype=dtype)
+        print(f"Epoch: {i}, Acc: {avg_acc}, Loss: {avg_loss}")
     return avg_acc, avg_loss
     ### END YOUR SOLUTION
 
@@ -301,6 +303,7 @@ def evaluate_ptb(model, data, seq_len=40, loss_fn=nn.SoftmaxLoss(),
     np.random.seed(4)
     ### BEGIN YOUR SOLUTION
     avg_acc, avg_loss = epoch_general_ptb(data, model, seq_len=seq_len, loss_fn=loss_fn, opt=None, device=device, dtype=dtype)
+    print(f"Evaluation Acc: {avg_acc}, Evaluation Loss: {avg_loss}")
     return avg_acc, avg_loss
     ### END YOUR SOLUTION
 
